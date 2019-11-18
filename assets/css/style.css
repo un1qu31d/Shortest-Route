@@ -1,0 +1,100 @@
+body {
+  margin: 0;
+}
+.component--layout {
+  height: 100%;
+  display: grid;
+  grid-template-rows: max-content 1fr max-content;
+}
+  .layout__header {
+    justify-self: center;
+  }
+  .layout__main {
+  }
+  .layout__footer {
+
+  }
+.component--maps {
+  height: 100vh;
+}
+  .maps__items {
+    box-sizing: border-box;
+    display: grid;
+    width: 100%;
+    height: 100%;
+  }
+    .maps__item {
+      border: 1px solid #eee;
+    }
+.component--canvas {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-content: center;
+  place-items: center;
+}
+  .canvas__viewport {
+    position: relative;
+  }
+    .canvas__point {
+      position: absolute;
+      border-radius: 50%;
+      width: 4px;
+      height: 4px;
+      background-color: black;
+      transform: translateX(-50%) translateY(50%);
+    }
+    .canvas__point.theme--graph {
+      background-color: red;
+      z-index: 101;
+    }
+    .canvas__point.theme--basic {
+      background-color: blue;
+      z-index: 102;
+    }
+    .canvas__point.theme--short {
+      background-color: green;
+      z-index: 103;
+    }
+    .canvas__line {
+      position: absolute;
+      height: 1px;
+      background-color: black;
+      transform-origin: 0% 50%;
+      transform: translateY('10px');
+    }
+    .canvas__line.theme--graph {
+      background-color: red;
+      z-index: 1;
+    }
+    .canvas__line.theme--basic {
+      background-color: blue;
+      z-index: 2;
+    }
+    .canvas__line.theme--short {
+      background-color: green;
+      z-index: 3;
+    }
+@media (min-aspect-ratio: 1/1), (max-aspect-ratio: 1/1) {
+  .maps__items {
+    padding: 32px;
+    grid-gap: 32px;
+    grid-template-columns: repeat(2, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+  }
+}
+@media (min-aspect-ratio: 1/1) {
+    .maps__item:first-child {
+      grid-row-end: span 2;
+    }
+}
+@media (max-aspect-ratio: 1/1) {
+    .maps__item:first-child {
+      grid-column-end: span 2;
+    }
+}
+@media (min-aspect-ratio: 1/1) and (max-aspect-ratio: 1/1) {
+    .maps__item:first-child {
+      grid-row-end: unset;
+    }
+}

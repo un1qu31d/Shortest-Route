@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Shortest Route</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+  </head>
+  <body>
+    <div class="component--layout">
+      <header class="layout__header">
+      </header>
+      <main class="layout__main">
+        <div class="component--maps">
+          <div class="maps__items">
+            <div class="maps__item">
+              <div class="component--canvas">
+                <div class="canvas__viewport">
+                </div>
+              </div>
+            </div>
+            <div class="maps__item">
+              <div class="component--canvas">
+                <div class="canvas__viewport">
+                </div>
+              </div>
+            </div>
+            <div class="maps__item">
+              <div class="component--canvas">
+                <div class="canvas__viewport">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+      <footer class="layout__footer">
+      </footer>
+    </div>
+    <script>
+      const performanceSteps = [];
+      performanceSteps[performanceSteps.length] = performance.now();
+    </script>
+    <script src="assets/js/EKF_Output4.js"></script>
+    <script src="assets/js/EKF_Output5.js"></script>
+    <script src="assets/js/EKF_Output6.js"></script>
+    <script>
+      const calcHypotenuse = (firstSide, secondSide) => Math.sqrt(Math.pow(firstSide, 2) + Math.pow(secondSide, 2));
+      const calcTangent = (opposite, adjacent) => (opposite / adjacent);
+      const radiansToDegrees = radians => (radians * (180/Math.PI));
+    </script>
+    <script src="assets/js/canvas.js"></script>
+    <script>
+      const sources = [EKF_Output4, EKF_Output5, EKF_Output6];
+
+      // Works good if sources as same as canvas count
+      const canvases = [...document.querySelectorAll('.component--canvas')].map((canvas, index) => {
+        const props = {};
+        props.points = sources[index].split('\n').map(line => ({x: parseFloat(line.split(',')[line.split(',').length - 1]), y: parseFloat(line.split(',')[line.split(',').length - 2])})).filter(point => point.x && point.y);
+        props.lines = props.points.slice(0, props.points.length - 1).map((point, index) => ({startPoint: point, endPoint: props.points[index + 1]}));
+        props.element = canvas;
+        return new Canvas(props);
+      });
+      canvases.forEach(canvase => canvase.draw());
+      window.addEventListener('resize', event => {
+        canvases.forEach(canvase => canvase.erase());
+        canvases.forEach(canvase => canvase.draw());
+      });
+    </script>
+    <script>
+      performanceSteps[performanceSteps.length] = performance.now();
+      console.log("Call to doSomething took " + (Math.max(...performanceSteps) - Math.min(...performanceSteps)) + " milliseconds.");
+    </script>
+  </body>
+</html>
