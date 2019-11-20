@@ -1,14 +1,11 @@
 class Canvas {
   constructor(props) {
-    this.points = props.points;
-    this.minX = Math.min(...this.points.map(point => point.x));
-    this.maxX = Math.max(...this.points.map(point => point.x));
-    this.minY = Math.min(...this.points.map(point => point.y));
-    this.maxY = Math.max(...this.points.map(point => point.y));
-    this.lines = props.lines;
     this.canvas = {
       element: props.element
     };
+    this.theme = props.theme;
+    this.points = props.points;
+    this.lines = props.lines;
     this.selectors = {
       viewport: '.canvas__viewport',
       ...props.selectors
@@ -18,22 +15,26 @@ class Canvas {
       line: 'canvas__line',
       ...props.classes
     };
+    this.minX = Math.min(...this.points.map(point => point.x));
+    this.maxX = Math.max(...this.points.map(point => point.x));
+    this.minY = Math.min(...this.points.map(point => point.y));
+    this.maxY = Math.max(...this.points.map(point => point.y));
   }
 
-  generatePointElement(point, theme = 'basic') {
+  generatePointElement(point) {
     const element = document.createElement('div');
     element.classList.add(this.classes.point);
-    element.classList.add(`theme--${theme}`);
+    element.classList.add(`theme--${this.theme}`);
     element.style.left = `${(point.x)}px`;
     element.style.bottom = `${(point.y)}px`;
     return element;
   }
 
-  generateLineElement(startPoint, endPoint, theme = 'basic') {
+  generateLineElement(startPoint, endPoint) {
     const optimizeD = (d) => (startPoint.y <= endPoint.y) ? ((startPoint.x <= endPoint.x) ? (360 - d) : (180 + d)) : ((startPoint.x <= endPoint.x) ? d : (180 - d));
     const element = document.createElement('div');
     element.classList.add(this.classes.line);
-    element.classList.add(`theme--${theme}`);
+    element.classList.add(`theme--${this.theme}`);
     element.style.left = `${startPoint.x}px`;
     element.style.bottom = `${startPoint.y}px`;
     element.style.width = `${calcHypotenuse((Math.abs(endPoint.x - startPoint.x)), (Math.abs(endPoint.y - startPoint.y)))}px`;
@@ -65,7 +66,7 @@ class Canvas {
     const lines = this.lines.map(line => ({startPoint: {x: optimizeX(line.startPoint.x), y: optimizeY(line.startPoint.y)}, endPoint: {x: optimizeX(line.endPoint.x), y: optimizeY(line.endPoint.y)}}));
     const fragment = document.createDocumentFragment();
     points.forEach(point => fragment.appendChild(this.generatePointElement(point)));
-    lines.forEach(line => fragment.appendChild(this.generateLineElement(line.startPoint, line.endPoint, 'basic')));
+    lines.forEach(line => fragment.appendChild(this.generateLineElement(line.startPoint, line.endPoint)));
     viewport.appendChild(fragment);
   }
 }

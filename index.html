@@ -51,17 +51,84 @@
       const radiansToDegrees = radians => (radians * (180/Math.PI));
     </script>
     <script src="assets/js/canvas.js"></script>
+    <script src="assets/js/graph.js"></script>
     <script>
-      const sources = [EKF_Output4, EKF_Output5, EKF_Output6];
-
-      // Works good if sources as same as canvas count
-      const canvases = [...document.querySelectorAll('.component--canvas')].map((canvas, index) => {
+      function generateCanvas(type, element, map) {
         const props = {};
-        props.points = sources[index].split('\n').map(line => ({x: parseFloat(line.split(',')[line.split(',').length - 1]), y: parseFloat(line.split(',')[line.split(',').length - 2])})).filter(point => point.x && point.y);
-        props.lines = props.points.slice(0, props.points.length - 1).map((point, index) => ({startPoint: point, endPoint: props.points[index + 1]}));
-        props.element = canvas;
+        props.element = element;
+        props.theme = type;
+        props.points = [];
+        props.lines = [];
+        const graph = new Graph();
+        map.forEach((point, index) => {
+          graph.addVertex(index);
+        });
+        if(type === 'basic') {
+          map.slice(0, map.length - 1).forEach((point, index) => {
+            graph.addEdge(index, (index + 1));
+          });
+        }
+        if(type === 'graph') {
+          map.slice(0, map.length - 1).forEach((source, sourceIndex, points) => {
+            graph.addEdge(sourceIndex, (sourceIndex + 1));
+            map.slice(sourceIndex + 2).filter(destination => (calcHypotenuse((Math.abs(destination.x - source.x)), (Math.abs(destination.y - source.y))) <= 4)).forEach((destination, destinationIndex) => {
+              graph.addEdge(sourceIndex, (sourceIndex + 2 + destinationIndex));
+            });
+          });
+        }
+        if(type === 'short') {
+          map.slice(0, map.length - 1).forEach((source, sourceIndex, points) => {
+            graph.addEdge(sourceIndex, (sourceIndex + 1), calcHypotenuse((Math.abs(map[(sourceIndex + 1)].x - map[sourceIndex].x)), (Math.abs(map[(sourceIndex + 1)].y - map[sourceIndex].y))));
+            map.slice(sourceIndex + 2).filter(destination => (calcHypotenuse((Math.abs(destination.x - source.x)), (Math.abs(destination.y - source.y))) <= 4)).forEach((destination, destinationIndex) => {
+              graph.addEdge(sourceIndex, (sourceIndex + 2 + destinationIndex), calcHypotenuse((Math.abs(map[(sourceIndex + 2 + destinationIndex)].x - map[sourceIndex].x)), (Math.abs(map[(sourceIndex + 2 + destinationIndex)].y - map[sourceIndex].y))));
+            });
+          });
+        }
+        const adjacencyList = graph.getAdjacencyList();
+        if(type === 'basic') {
+          for (const key in adjacencyList) {
+            props.points.push(map[key]);
+            if (adjacencyList.hasOwnProperty(key)) {
+              adjacencyList[key].forEach(item => {
+                props.lines.push({startPoint: map[key], endPoint: map[item.vertex]});
+              });
+            }
+          }
+        }
+        if(type === 'graph') {
+          for (const key in adjacencyList) {
+            props.points.push(map[key]);
+            if (adjacencyList.hasOwnProperty(key)) {
+              adjacencyList[key].forEach(item => {
+                props.lines.push({startPoint: map[key], endPoint: map[item.vertex]});
+              });
+            }
+          }
+        }
+        if(type === 'short') {
+          function getRoute(source, destination, route) {
+            route.push(map[source]);
+            if(source === destination) return route;
+            const points = adjacencyList[source].map(item => item.vertex);
+            return points.length ? getRoute(points[(points.length - 1)], destination, route) : false;
+          }
+          getRoute(0, (map.length - 1), []).forEach(point => {
+            props.points.push(point);
+          });
+          props.points.slice(0, props.points.length - 1).forEach((point, index) => {
+            props.lines.push({startPoint: point, endPoint: props.points[(index + 1)]});
+          });
+        }
         return new Canvas(props);
-      });
+      }
+
+      const maps = [EKF_Output4, EKF_Output5, EKF_Output6].map(source => (source.split('\n').map(line => ({x: parseFloat(line.split(',')[line.split(',').length - 1]), y: parseFloat(line.split(',')[line.split(',').length - 2])})).filter(point => point.x && point.y)));
+      let canvases = [];
+      (map => {
+        canvases.push(generateCanvas('basic', [...document.querySelectorAll('.component--canvas')][0], map));
+        canvases.push(generateCanvas('graph', [...document.querySelectorAll('.component--canvas')][1], map));
+        canvases.push(generateCanvas('short', [...document.querySelectorAll('.component--canvas')][2], map));
+      })(maps[1]);
       canvases.forEach(canvase => canvase.draw());
       window.addEventListener('resize', event => {
         canvases.forEach(canvase => canvase.erase());
