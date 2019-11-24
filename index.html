@@ -32,6 +32,12 @@
                 </div>
               </div>
             </div>
+            <div class="maps__item">
+              <div class="component--canvas">
+                <div class="canvas__viewport">
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </main>
@@ -45,6 +51,8 @@
     <script src="assets/js/EKF_Output4.js"></script>
     <script src="assets/js/EKF_Output5.js"></script>
     <script src="assets/js/EKF_Output6.js"></script>
+    <script src="assets/js/testforpruning.js"></script>
+    <script src="assets/js/test2prun.js"></script>
     <script>
       const calcHypotenuse = (firstSide, secondSide) => Math.sqrt(Math.pow(firstSide, 2) + Math.pow(secondSide, 2));
       const calcTangent = (opposite, adjacent) => (opposite / adjacent);
@@ -54,81 +62,114 @@
     <script src="assets/js/graph.js"></script>
     <script>
       function generateCanvas(type, element, map) {
+        function getSmoothMap(map) {
+          const destination = map[(map.length - 1)];
+          return map.reduce((accumulator, point) => {
+            if(accumulator.length) {
+              const pointHypotenuse = calcHypotenuse((Math.abs(destination.x - point.x)), (Math.abs(destination.y - point.y)));
+              const lastPoint = accumulator[(accumulator.length - 1)];
+              const lastPointHypotenuse = calcHypotenuse((Math.abs(destination.x - lastPoint.x)), (Math.abs(destination.y - lastPoint.y)));
+              if(pointHypotenuse < lastPointHypotenuse) {
+                accumulator.push(point);
+              }
+            } else {
+              accumulator.push(point);
+            }
+            return accumulator;
+          }, []);
+        }
         const props = {};
         props.element = element;
         props.theme = type;
+        props.map = map;
         props.points = [];
         props.lines = [];
         const graph = new Graph();
-        map.forEach((point, index) => {
-          graph.addVertex(index);
-        });
+        let points = [];
         if(type === 'basic') {
-          map.slice(0, map.length - 1).forEach((point, index) => {
+          points = map.slice(0);
+        }
+        if(type === 'smooth') {
+          points = getSmoothMap(map);
+        }
+        if(type === 'graph') {
+          points = getSmoothMap(map);
+        }
+        if(type === 'short') {
+          points = getSmoothMap(map);
+        }
+        if(type === 'basic') {
+          points.forEach((point, index) => {
+            graph.addVertex(index);
+          });
+          points.slice(0, points.length - 1).forEach((point, index) => {
+            graph.addEdge(index, (index + 1));
+          });
+        }
+        if(type === 'smooth') {
+          points.forEach((point, index) => {
+            graph.addVertex(index);
+          });
+          points.slice(0, points.length - 1).forEach((point, index) => {
             graph.addEdge(index, (index + 1));
           });
         }
         if(type === 'graph') {
-          map.slice(0, map.length - 1).forEach((source, sourceIndex, points) => {
+          points.forEach((point, index) => {
+            graph.addVertex(index);
+          });
+          points.slice(0, points.length - 1).forEach((source, sourceIndex) => {
             graph.addEdge(sourceIndex, (sourceIndex + 1));
-            map.slice(sourceIndex + 2).filter(destination => (calcHypotenuse((Math.abs(destination.x - source.x)), (Math.abs(destination.y - source.y))) <= 4)).forEach((destination, destinationIndex) => {
+            points.slice(sourceIndex + 2).filter(destination => (calcHypotenuse((Math.abs(destination.x - source.x)), (Math.abs(destination.y - source.y))) <= 4)).forEach((destination, destinationIndex) => {
               graph.addEdge(sourceIndex, (sourceIndex + 2 + destinationIndex));
             });
           });
         }
         if(type === 'short') {
-          map.slice(0, map.length - 1).forEach((source, sourceIndex, points) => {
-            graph.addEdge(sourceIndex, (sourceIndex + 1), calcHypotenuse((Math.abs(map[(sourceIndex + 1)].x - map[sourceIndex].x)), (Math.abs(map[(sourceIndex + 1)].y - map[sourceIndex].y))));
-            map.slice(sourceIndex + 2).filter(destination => (calcHypotenuse((Math.abs(destination.x - source.x)), (Math.abs(destination.y - source.y))) <= 4)).forEach((destination, destinationIndex) => {
-              graph.addEdge(sourceIndex, (sourceIndex + 2 + destinationIndex), calcHypotenuse((Math.abs(map[(sourceIndex + 2 + destinationIndex)].x - map[sourceIndex].x)), (Math.abs(map[(sourceIndex + 2 + destinationIndex)].y - map[sourceIndex].y))));
+          // console.log(points.reduce((accumulator, point) => (accumulator += `${point.y},${point.x}\n`), ''));
+          points.forEach((point, index) => {
+            graph.addVertex(index);
+          });
+          points.slice(0, points.length - 1).forEach((source, sourceIndex) => {
+            graph.addEdge(sourceIndex, (sourceIndex + 1), calcHypotenuse((Math.abs(points[(sourceIndex + 1)].x - points[sourceIndex].x)), (Math.abs(points[(sourceIndex + 1)].y - points[sourceIndex].y))));
+            points.slice(sourceIndex + 2).filter(destination => (calcHypotenuse((Math.abs(destination.x - source.x)), (Math.abs(destination.y - source.y))) <= 4)).forEach((destination, destinationIndex) => {
+              graph.addEdge(sourceIndex, (sourceIndex + 2 + destinationIndex), calcHypotenuse((Math.abs(points[(sourceIndex + 2 + destinationIndex)].x - points[sourceIndex].x)), (Math.abs(points[(sourceIndex + 2 + destinationIndex)].y - points[sourceIndex].y))));
             });
           });
         }
         const adjacencyList = graph.getAdjacencyList();
-        if(type === 'basic') {
-          for (const key in adjacencyList) {
-            props.points.push(map[key]);
-            if (adjacencyList.hasOwnProperty(key)) {
-              adjacencyList[key].forEach(item => {
-                props.lines.push({startPoint: map[key], endPoint: map[item.vertex]});
-              });
-            }
-          }
-        }
-        if(type === 'graph') {
-          for (const key in adjacencyList) {
-            props.points.push(map[key]);
-            if (adjacencyList.hasOwnProperty(key)) {
-              adjacencyList[key].forEach(item => {
-                props.lines.push({startPoint: map[key], endPoint: map[item.vertex]});
-              });
-            }
-          }
-        }
         if(type === 'short') {
           function getRoute(source, destination, route) {
-            route.push(map[source]);
+            route.push(points[source]);
             if(source === destination) return route;
-            const points = adjacencyList[source].map(item => item.vertex);
-            return points.length ? getRoute(points[(points.length - 1)], destination, route) : false;
+            const pointsList = adjacencyList[source].map(item => item.vertex);
+            return pointsList.length ? getRoute(pointsList[(pointsList.length - 1)], destination, route) : false;
           }
-          getRoute(0, (map.length - 1), []).forEach(point => {
+          getRoute(0, (points.length - 1), []).forEach(point => {
             props.points.push(point);
           });
           props.points.slice(0, props.points.length - 1).forEach((point, index) => {
             props.lines.push({startPoint: point, endPoint: props.points[(index + 1)]});
           });
+        } else {
+          for (const key in adjacencyList) {
+            props.points.push(points[key]);
+            adjacencyList[key].forEach(item => {
+              props.lines.push({startPoint: points[key], endPoint: points[item.vertex]});
+            });
+          }
         }
         return new Canvas(props);
       }
 
-      const maps = [EKF_Output4, EKF_Output5, EKF_Output6].map(source => (source.split('\n').map(line => ({x: parseFloat(line.split(',')[line.split(',').length - 1]), y: parseFloat(line.split(',')[line.split(',').length - 2])})).filter(point => point.x && point.y)));
+      const maps = [EKF_Output4, EKF_Output5, EKF_Output6, testforpruning, test2prun].map(source => (source.split('\n').map(line => ({x: parseFloat(line.split(',')[line.split(',').length - 1]), y: parseFloat(line.split(',')[line.split(',').length - 2])})).filter(point => point.x && point.y)));
       let canvases = [];
       (map => {
         canvases.push(generateCanvas('basic', [...document.querySelectorAll('.component--canvas')][0], map));
-        canvases.push(generateCanvas('graph', [...document.querySelectorAll('.component--canvas')][1], map));
-        canvases.push(generateCanvas('short', [...document.querySelectorAll('.component--canvas')][2], map));
-      })(maps[1]);
+        canvases.push(generateCanvas('smooth', [...document.querySelectorAll('.component--canvas')][1], map));
+        canvases.push(generateCanvas('graph', [...document.querySelectorAll('.component--canvas')][2], map));
+        canvases.push(generateCanvas('short', [...document.querySelectorAll('.component--canvas')][3], map));
+      })(maps[4]);
       canvases.forEach(canvase => canvase.draw());
       window.addEventListener('resize', event => {
         canvases.forEach(canvase => canvase.erase());

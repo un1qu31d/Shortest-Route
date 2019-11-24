@@ -4,6 +4,7 @@ class Canvas {
       element: props.element
     };
     this.theme = props.theme;
+    this.map = props.map;
     this.points = props.points;
     this.lines = props.lines;
     this.selectors = {
@@ -15,10 +16,10 @@ class Canvas {
       line: 'canvas__line',
       ...props.classes
     };
-    this.minX = Math.min(...this.points.map(point => point.x));
-    this.maxX = Math.max(...this.points.map(point => point.x));
-    this.minY = Math.min(...this.points.map(point => point.y));
-    this.maxY = Math.max(...this.points.map(point => point.y));
+    this.minX = Math.min(...this.map.map(point => point.x));
+    this.maxX = Math.max(...this.map.map(point => point.x));
+    this.minY = Math.min(...this.map.map(point => point.y));
+    this.maxY = Math.max(...this.map.map(point => point.y));
   }
 
   generatePointElement(point) {
